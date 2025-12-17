@@ -1,19 +1,28 @@
 services:
-  # config-server:
-  #   build: ./config-server
-  #   image: msa/config-server
-  #   ports:
-  #     - "9000:9000"
-  #   networks:
-  #     - msa-network
-  
-  # eureka-server:
-  #   build: ./eureka-server
-  #   image: msa/eureka-server
-  #   ports:
-  #     - "8761:8761"
-  #   networks:
-  #     - msa-network
+  mysql:
+    image: mysql:8.0
+    container_name: msa-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      TZ: Asia/Seoul
+    command: # 인코딩 설정
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+      - ./init-sql:/docker-entrypoint-initdb.d
+    networks:
+      - msa-network
+
+  redis:
+    image: redis:alpine
+    container_name: msa-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - msa-network
 
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -22,83 +31,19 @@ services:
     networks:
       - msa-network
     environment:
-      # 1. KRaft 모드 활성화 (broker와 controller 역할을 동시에 수행)
-      KAFKA_PROCESS_ROLES: 'broker,controller'
-      # 2. 노드 ID 설정
       KAFKA_NODE_ID: 1
-      # ❗️ 'localhost' -> 'kafka' (Docker 내부 통신용)
+      KAFKA_PROCESS_ROLES: 'broker,controller'
       KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:9093'
-      # 4. 리스너 설정
-      KAFKA_LISTENERS: 'PLAINTEXT://:9092,CONTROLLER://:9093'
-      # ❗️ 'localhost' 유지 (로컬 PC(맥)에서 접속할 주소)
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:9092'
-      # 5. 내부 컨트롤러 리스너 이름 설정
+
+      KAFKA_LISTENERS: 'PLAINTEXT://:9092,CONTROLLER://:9093,INTERNAL://:29092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:9092,INTERNAL://kafka:29092'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      # 6. 단일 노드 설정
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       CLUSTER_ID: '3z9xN1AMRW2ZWmMU5f-xEQ'
-
-  # user-service:
-  #   build: ./user-service
-  #   image: msa/user-service
-  #   ports:
-  #     - "8081:8081"
-  #   networks:
-  #     - msa-network
-  #   depends_on:
-  #     - config-server
-  #     - eureka-server
-  #     - kafka
-  #   environment:
-  #     - SPRING_APPLICATION_NAME=user-service
-  #     - SPRING_PROFILES_ACTIVE=dev
-  #     - SPRING_CONFIG_IMPORT=configserver:http://config-server:9000
-  #     - SPRING_CLOUD_CONFIG_USERNAME=admin
-  #     - SPRING_CLOUD_CONFIG_PASSWORD=admin
-  #     - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://admin:admin@eureka-server:8761/eureka/
-  #     - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
-
-  # order-service:
-  #   build: ./order-service
-  #   image: msa/order-service
-  #   ports:
-  #     - "8082:8082"
-  #   networks:
-  #     - msa-network
-  #   depends_on:
-  #     - config-server
-  #     - eureka-server
-  #     - user-service
-  #     - kafka
-  #   environment:
-  #     - SPRING_APPLICATION_NAME=order-service
-  #     - SPRING_PROFILES_ACTIVE=dev
-  #     - SPRING_CONFIG_IMPORT=configserver:http://config-server:9000
-  #     - SPRING_CLOUD_CONFIG_USERNAME=admin
-  #     - SPRING_CLOUD_CONFIG_PASSWORD=admin
-  #     - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://admin:admin@eureka-server:8761/eureka/
-  #     - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
-
-  # api-gateway:
-  #   build: ./api-gateway
-  #   image: msa/api-gateway
-  #   ports:
-  #     - "8080:8080"
-  #   networks:
-  #     - msa-network
-  #   depends_on:
-  #     - config-server
-  #     - eureka-server
-  #     - user-service
-  #     - order-service
-  #   environment:
-  #     - SPRING_APPLICATION_NAME=api-gateway
-  #     - SPRING_PROFILES_ACTIVE=dev
-  #     - SPRING_CONFIG_IMPORT=configserver:http://config-server:9000
-  #     - SPRING_CLOUD_CONFIG_USERNAME=admin
-  #     - SPRING_CLOUD_CONFIG_PASSWORD=admin
-  #     - EUREKA_CLIENT_SERVICE-URL_DEFAULTZONE=http://admin:admin@eureka-server:8761/eureka/
 
 networks:
   msa-network:

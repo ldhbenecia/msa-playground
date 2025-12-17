@@ -1,0 +1,19 @@
+server:
+  port: 8000
+
+spring:
+  cloud:
+    kubernetes:
+      config:
+        enabled: false
+      discovery:
+        enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics,prometheus"
+  metrics:
+    tags:
+      application: ${spring.application.name}

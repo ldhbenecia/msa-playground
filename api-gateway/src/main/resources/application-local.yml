@@ -1,0 +1,19 @@
+server:
+  port: 8000
+
+spring:
+  cloud:
+    kubernetes:
+      config:
+        enabled: false
+      discovery:
+        enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics,prometheus"
+  metrics:
+    tags:
+      application: api-gateway

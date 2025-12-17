@@ -1,0 +1,52 @@
+server:
+  port: 8082
+
+health:
+  message: "Hello from order-service in Helm K8s DEV!"
+
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+  h2:
+    console:
+      enabled: true
+      path: /order-h2-console
+
+  cloud:
+    function:
+      definition: pointsFailed
+    stream:
+      kafka:
+        binder:
+          brokers: ${KAFKA_BROKERS}
+      bindings:
+        orderCreated-out-0:
+          destination: order-created
+          content-type: application/json
+
+        pointsFailed-in-0:
+          destination: points-failed
+          group: order-service
+
+    kubernetes:
+      config:
+        enabled: false
+      discovery:
+        enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics,prometheus"
+  metrics:
+    tags:
+      application: ${spring.application.name}

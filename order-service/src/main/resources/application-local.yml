@@ -6,19 +6,24 @@ health:
 
 spring:
   datasource:
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:orderdb;DB_CLOSE_DELAY=-1
-    username: sa
-    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/order_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: root
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
 
-  h2:
-    console:
-      enabled: true
-      path: /order-h2-console
+    data:
+      redis:
+        host: localhost
+        port: 6379
 
   cloud:
     function:
